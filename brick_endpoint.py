@@ -12,7 +12,7 @@ import pdb
 
 class BrickEndpoint(object):
 
-    def __init__(self, sparql_url, brick_version, base_ns=''):
+    def __init__(self, sparql_url, brick_version, base_ns='', load_schema=True):
         self.BRICK_VERSION = brick_version
         self.sparql_url = sparql_url
         self.sparql = SPARQLWrapper(endpoint=self.sparql_url,
@@ -63,6 +63,8 @@ class BrickEndpoint(object):
         self.q_prefix += '\n'
 
         self._init_brick_constants()
+        if load_schema:
+            self.load_schema()
 
     def _init_brick_constants(self):
         self.HAS_LOC = URIRef(self.BF + 'hasLocation')
@@ -76,12 +78,9 @@ class BrickEndpoint(object):
 
     def _format_select_res(self, raw_res):
         var_names = raw_res['head']['vars']
-        try:
-            values = [[row[var_name]['value'] for var_name in var_names]
+        values = [[row[var_name]['value'] if var_name in row else None
+                   for var_name in var_names]
                   for row in raw_res['results']['bindings']]
-        except:
-            pdb.set_trace()
-        #TODO: Below line is a hack.
         var_names = ['?'+var_name for var_name in var_names]
         return [var_names, values]
 
@@ -197,6 +196,12 @@ class BrickEndpoint(object):
         triples = [(entity, RDF.type, tagset)]
         self._add_triples(triples)
         return str(entity)
+
+    def load_ttlfile(self, filepath):
+        q = """
+        load <file://{0}> into <{1}>
+        """.format(filepath, self.base_graph)
+        res = self.update(q)
 
     def load_schema(self):
         schema_urls = [str(ns)[:-1] + '.ttl' for ns in
