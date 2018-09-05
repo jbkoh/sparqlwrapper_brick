@@ -40,6 +40,7 @@ class BrickEndpoint(object):
 
         self.namespaces = {
             '': self.BASE,
+            'base': self.BASE,
             'brick':self.BRICK,
             'bf': self.BF,
             'brick_tag': self.BRICK_TAG,
@@ -65,6 +66,16 @@ class BrickEndpoint(object):
         self._init_brick_constants()
         if load_schema:
             self.load_schema()
+
+    def add_namespace(self, prefix, ns):
+        ns = Namespace(ns)
+        self.namespaces[prefix] = ns
+        if 'uri' in dir(ns):
+            ns_n3 = ns.uri.n3()
+        else:
+            ns_n3 = ns[''].n3()
+
+        self.q_prefix += 'prefix {0}: {1}\n'.format(prefix, ns_n3)
 
     def _init_brick_constants(self):
         self.HAS_LOC = URIRef(self.BF + 'hasLocation')
@@ -162,8 +173,11 @@ class BrickEndpoint(object):
                     term = int(term)
                 elif self._is_float(term):
                     term = float(term)
-                if self._is_bool(term):
-                    term = _str2bool(term)
+                elif self._is_bool(term):
+                    term = self._str2bool(term)
+                else:
+                    # Otherwise, just str
+                    pass
                 node = Literal(term)
         else:
             node = Literal(term)
@@ -171,7 +185,7 @@ class BrickEndpoint(object):
 
     def add_triple(self, pseudo_s, pseudo_p, pseudo_o):
         triple = self.make_triple(pseudo_s, pseudo_p, pseudo_o)
-        self.add_triples([triple])
+        return self._add_triples([triple])
 
     def make_triple(self, pseudo_s, pseudo_p, pseudo_o):
         s = self._parse_term(pseudo_s)
@@ -181,13 +195,17 @@ class BrickEndpoint(object):
 
 
     def add_triples(self, pseudo_triples):
+        if not pseudo_triples:
+            # TODO: Define the right format same ass _add_triples.
+            return True
         triples = [self.make_triple(*pseudo_triple)
                    for pseudo_triple in pseudo_triples]
-        self._add_triples(triples)
+        return self._add_triples(triples)
 
     def _add_triples(self, triples):
         q = self._create_insert_query(triples)
         res = self.update(q)
+        return res
 
 
     def add_brick_instance(self, entity_name, tagset):
