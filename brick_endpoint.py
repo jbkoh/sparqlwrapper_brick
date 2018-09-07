@@ -6,6 +6,7 @@ from SPARQLWrapper import JSON, SELECT, INSERT, DIGEST, GET, POST
 from rdflib import URIRef, Literal
 
 from copy import deepcopy
+import pandas as pd
 
 import pdb
 
@@ -50,10 +51,8 @@ class BrickEndpoint(object):
             'owl': OWL,
             'foaf': FOAF
         }
-        #self.q_prefix = '\n'.join([
-        #    'prefix {0}: {1}'.format(prefix, ns.uri.n3()) for prefix, ns
-        #    in self.namespaces.items()]) + '\n'
         self.q_prefix = ''
+        #self.q_prefix = 'DEFINE input:inference <adxrules>\n'
         for prefix, ns in self.namespaces.items():
             if 'uri' in dir(ns):
                 ns_n3 = ns.uri.n3()
@@ -229,6 +228,16 @@ class BrickEndpoint(object):
             qstr = load_query_template.format(
                 schema_url.replace('https', 'http'), self.base_graph)
             res = self.update(qstr)
+
+    def sparqlres2df(self, res):
+        column_names = res[0]
+        data = res[1]
+        return pd.DataFrame(data=data, columns=column_names)
+
+    def sparqlres2csv(self, res, filename):
+        self.sparqlres2df(res).to_csv(filename)
+
+
 
 
 if __name__ == '__main__':
