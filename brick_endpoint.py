@@ -1,3 +1,6 @@
+import os
+import json
+
 import rdflib
 from rdflib import RDFS, RDF, OWL, Namespace
 from rdflib.namespace import FOAF
@@ -228,6 +231,28 @@ class BrickEndpoint(object):
             qstr = load_query_template.format(
                 schema_url.replace('https', 'http'), self.base_graph)
             res = self.update(qstr)
+        self.init_topclasses()
+
+    def init_topclasses(self, force=False):
+        topclasses_file = 'Brick/topclasses.json'
+        if os.path.isfile(topclasses_file) and not force:
+            with open(topclasses_file, 'r') as fp:
+                self.topclasses = json.load(fp)
+        else:
+            self.topclasses = {}
+            target_topclasses = ['Point', 'Equipment', 'Location']
+            qstr_template = """
+            select ?tagset where {{
+            ?tagset rdfs:subClassOf* brick:{0}.
+            }}
+            """
+            for topclass in target_topclasses:
+                qstr = qstr_template.format(topclass)
+                res = self.query(qstr)
+                for [tagset] in res[1]:
+                    self.topclasses[tagset.split('#')[-1].lower()] = topclass.lower()
+            with open(topclasses_file, 'w') as fp:
+                json.dump(self.topclasses, fp, indent=2)
 
     def sparqlres2df(self, res):
         column_names = res[0]
@@ -237,8 +262,29 @@ class BrickEndpoint(object):
     def sparqlres2csv(self, res, filename):
         self.sparqlres2df(res).to_csv(filename)
 
+    def get_top_class(self, tagset):
+        pass
 
-
+    def get_tagset_type(self, tagset):
+        pure_tagset = tagset.split('-')[0]
+        postfix = pure_tagset.split('_')[-1].lower()
+        if postfix in ['server',
+                       'networkadapter',
+                       ]:
+            return 'networkadapter'
+        else:
+            topclass = self.topclasses.get(pure_tagset, None)
+            if topclass:
+                return topclass.lower()
+            else:
+                if postfix in ['sensor',
+                               'setpoint',
+                               'status',
+                               'alarm',
+                               'command',]:
+                    return 'point'
+                else:
+                    return 'unidentified'
 
 if __name__ == '__main__':
     endpoint = BrickEndpoint('http://localhost:8890/sparql', '1.0.3')
