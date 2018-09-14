@@ -1,5 +1,9 @@
 import os
 import json
+import pdb
+from copy import deepcopy
+import urllib.parse
+url_encode = urllib.parse.quote_plus
 
 import rdflib
 from rdflib import RDFS, RDF, OWL, Namespace
@@ -8,11 +12,12 @@ from SPARQLWrapper import SPARQLWrapper
 from SPARQLWrapper import JSON, SELECT, INSERT, DIGEST, GET, POST
 from rdflib import URIRef, Literal
 
-from copy import deepcopy
 import pandas as pd
 
-import pdb
-
+def normalize_uri(s):
+    assert isinstance(s, str)
+    s = s.replace(' ', '_')
+    return url_encode(s)
 
 class BrickEndpoint(object):
 
@@ -68,6 +73,7 @@ class BrickEndpoint(object):
         self._init_brick_constants()
         if load_schema:
             self.load_schema()
+        self.init_topclasses()
 
     def add_namespace(self, prefix, ns):
         ns = Namespace(ns)
@@ -195,7 +201,6 @@ class BrickEndpoint(object):
         o = self._parse_term(pseudo_o)
         return (s, p, o)
 
-
     def add_triples(self, pseudo_triples):
         if not pseudo_triples:
             # TODO: Define the right format same ass _add_triples.
@@ -226,12 +231,11 @@ class BrickEndpoint(object):
     def load_schema(self):
         schema_urls = [str(ns)[:-1] + '.ttl' for ns in
                        [self.BRICK, self.BRICK_USE, self.BF, self.BRICK_TAG]]
-        load_query_template = 'LOAD <{0}> into <{1}>'
+        oad_query_template = 'LOAD <{0}> into <{1}>'
         for schema_url in schema_urls:
             qstr = load_query_template.format(
                 schema_url.replace('https', 'http'), self.base_graph)
             res = self.update(qstr)
-        self.init_topclasses()
 
     def init_topclasses(self, force=False):
         topclasses_file = 'Brick/topclasses.json'
@@ -285,6 +289,26 @@ class BrickEndpoint(object):
                     return 'point'
                 else:
                     return 'unidentified'
+
+    def normalize2uri(self, s):
+        return '_'.join(re.findall('[a-zA-Z0-9]+', s))
+
+    def serialize_graph(self, nobrick=True):
+        g = rdflib.Graph()
+        qstr = """
+        select ?s ?p ?o where {
+        ?s ?p ?o.
+        }
+        """
+        res = self.query(qstr)
+        for row in res[1]:
+            g.add((URIRef(row[0]), URIRef(row[1]), URIRef(row[2])))
+        g.serialize('test.ttl', format='turtle')
+
+    def check_tag_in_tagset(self, tag, tagset):
+        TODO
+
+
 
 if __name__ == '__main__':
     endpoint = BrickEndpoint('http://localhost:8890/sparql', '1.0.3')
