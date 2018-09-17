@@ -231,7 +231,7 @@ class BrickEndpoint(object):
     def load_schema(self):
         schema_urls = [str(ns)[:-1] + '.ttl' for ns in
                        [self.BRICK, self.BRICK_USE, self.BF, self.BRICK_TAG]]
-        oad_query_template = 'LOAD <{0}> into <{1}>'
+        load_query_template = 'LOAD <{0}> into <{1}>'
         for schema_url in schema_urls:
             qstr = load_query_template.format(
                 schema_url.replace('https', 'http'), self.base_graph)
