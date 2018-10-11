@@ -293,7 +293,7 @@ class BrickEndpoint(object):
     def normalize2uri(self, s):
         return '_'.join(re.findall('[a-zA-Z0-9]+', s))
 
-    def serialize_graph(self, nobrick=True):
+    def serialize_graph(self, filename, nobrick=True):
         g = rdflib.Graph()
         qstr = """
         select ?s ?p ?o where {
@@ -303,7 +303,7 @@ class BrickEndpoint(object):
         res = self.query(qstr)
         for row in res[1]:
             g.add((URIRef(row[0]), URIRef(row[1]), URIRef(row[2])))
-        g.serialize('test.ttl', format='turtle')
+        g.serialize(filename, format='turtle')
 
     def check_tag_in_tagset(self, tag, tagset):
         TODO
