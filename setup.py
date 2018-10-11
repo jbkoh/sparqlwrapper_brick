@@ -7,6 +7,6 @@ setup(
     version = __version__,
     author = __author__,
     packages = ['sparqlwrapper_brick'],
-    package_dir={'': '../'},
+    #package_dir={'': '../'},
     install_requires = ['setuptools', 'requests', 'SPARQLWrapper'],
 )
