@@ -2,8 +2,6 @@ import os
 import json
 import pdb
 from copy import deepcopy
-import urllib.parse
-url_encode = urllib.parse.quote_plus
 
 import rdflib
 from rdflib import RDFS, RDF, OWL, Namespace
@@ -14,10 +12,7 @@ from rdflib import URIRef, Literal
 
 import pandas as pd
 
-def normalize_uri(s):
-    assert isinstance(s, str)
-    s = s.replace(' ', '_')
-    return url_encode(s)
+from .common import *
 
 class BrickEndpoint(object):
 
@@ -34,6 +29,7 @@ class BrickEndpoint(object):
         self.BASE = Namespace(base_ns)
         self.base_graph = base_ns[:-1]
         self.sparql.addDefaultGraph(self.base_graph)
+        self.sparql.addParameter("default-graph-uri", self.base_graph)
         self.BRICK = Namespace(
             'https://brickschema.org/schema/{0}/Brick#'\
             .format(self.BRICK_VERSION))
