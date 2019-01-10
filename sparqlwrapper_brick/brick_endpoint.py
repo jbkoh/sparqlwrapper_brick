@@ -27,7 +27,7 @@ class BrickEndpoint(object):
         if not base_ns:
             base_ns = 'http://example.com/'
         self.BASE = Namespace(base_ns)
-        self.base_graph = base_ns[:-1]
+        self.base_graph = base_ns.strip('/')
         self.sparql.addDefaultGraph(self.base_graph)
         self.sparql.addParameter("default-graph-uri", self.base_graph)
         self.BRICK = Namespace(
